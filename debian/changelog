@@ -1,3 +1,10 @@
+yunohost-config-dovecot (2.1.2) testing; urgency=low
+
+  [ Novakin ]
+  * Prevent use of SSLv2 and SSLv3 in dovecot.conf
+
+ -- Julien Malik <julien.malik@paraiso.me>  Tue, 17 Mar 2015 22:40:32 +0100
+
 yunohost-config-dovecot (2.1.1) testing; urgency=low
 
   * Bump version to 2.1.1 to bootstrap new build workflow
