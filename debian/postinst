@@ -1,47 +1,33 @@
 #!/bin/bash
 
+[ -f /etc/yunohost/yunohost.conf ] && [ $(grep dovecot /etc/yunohost/yunohost.conf | cut -d= -f2) = "no" ] || exit 1
+
 HOSTNAME=$(hostname -f)
-
-TMP="/usr/share/yunohost/yunohost-config/dovecot"
-
-function randpass() {
-  [ "$2" == "0" ] && CHAR="[:alnum:]" || CHAR="[:graph:]"
-    cat /dev/urandom | tr -cd "$CHAR" | head -c ${1:-32}
-    echo
-}
-
+TEMPLATE="/usr/share/yunohost/yunohost-config/dovecot"
 
 if [ -f /etc/yunohost/current_host ];
 then
-        DOMAIN=$(cat /etc/yunohost/current_host)
-        find $TMP -type f -exec sed -i "s/yunohost.org/$DOMAIN/g" {} \;
+  DOMAIN=$(cat /etc/yunohost/current_host)
+  find $TEMPLATE -type f -exec sed -i "s/yunohost.org/$DOMAIN/g" {} \;
 fi
 
-if [ -f /etc/dovecot/global_script ];
+# Create vmail user
+adduser --system --ingroup mail --uid 500 vmail
+
+# Install dovecot main configuration
+install -o root -g root -m 0644 $TEMPLATE/{dovecot.conf,dovecot-ldap.conf} /etc/dovecot/
+if [ ! -f /proc/net/if_inet6 ];
 then
-	rm /etc/dovecot/global_script
+  sed -i 's|^listen.*|listen = \*|' /etc/dovecot/dovecot.conf 
 fi
 
-if [ ! -d /etc/dovecot/global_script/ ];
-then
-        mkdir /etc/dovecot/global_script/
-fi
+# Setup Sieve
+[ -d /etc/dovecot/global_script ] && rm /etc/dovecot/global_script
+[ ! -d /etc/dovecot/global_script ] && mkdir -m 0770 /etc/dovecot/global_script
+install -o root -g root -m 0755 $TEMPLATE/sa-learn-pipe.sh /usr/bin/sa-learn-pipe.sh
+install -o vmail -g mail -m 0660  $TEMPLATE/global_script/dovecot.sieve /etc/dovecot/global_script
+sievec /etc/dovecot/global_script/dovecot.sieve
+chmod 0660 /etc/dovecot/global_script/dovecot.svbin
 
-#Dovecot
-if [ ! -f /etc/yunohost/yunohost.conf ] || [ $(grep dovecot /etc/yunohost/yunohost.conf | cut -d= -f2) = "no" ];
-then
-	adduser --system --ingroup mail --uid 500 vmail
-	cp $TMP/sa-learn-pipe.sh /usr/bin/sa-learn-pipe.sh
-	chmod +x /usr/bin/sa-learn-pipe.sh
-	cp $TMP/{dovecot.conf,dovecot-ldap.conf,dovecot-ipv4.conf} /etc/dovecot/
-	cp $TMP/global_script/dovecot.sieve /etc/dovecot/global_script
-	if [ ! -f /proc/net/if_inet6 ];
-	then
-		mv /etc/dovecot/dovecot-ipv4.conf /etc/dovecot/dovecot.conf
-	fi
-	chown -R vmail:mail /etc/dovecot/global_script/
-	chmod -R 770 /etc/dovecot/global_script/
-	sievec /etc/dovecot/global_script/dovecot.sieve
-	chmod +rw /etc/dovecot/global_script/dovecot.svbin
-	service dovecot reload > /dev/null 2>&1
-fi
+# Reload
+service dovecot reload > /dev/null 2>&1
