@@ -1,6 +1,6 @@
 #!/bin/bash
 
-[ -f /etc/yunohost/yunohost.conf ] && [ $(grep dovecot /etc/yunohost/yunohost.conf | cut -d= -f2) = "no" ] || exit 1
+[ -f "/etc/yunohost/yunohost.conf" ] && [ "$(grep dovecot /etc/yunohost/yunohost.conf | cut -d= -f2)" = "no" ] || exit 1
 
 HOSTNAME=$(hostname -f)
 TEMPLATE="/usr/share/yunohost/yunohost-config/dovecot"
