@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/bin/sh
+
+set -e
 
 [ -f "/etc/yunohost/yunohost.conf" ] && [ "$(grep dovecot /etc/yunohost/yunohost.conf | cut -d= -f2)" = "no" ] || exit 1
 
@@ -12,22 +14,28 @@ then
 fi
 
 # Create vmail user
-adduser --system --ingroup mail --uid 500 vmail
+if ! id vmail > /dev/null 2>&1 ; then
+  adduser --system --ingroup mail --uid 500 vmail
+fi
 
 # Install dovecot main configuration
-install -o root -g root -m 0644 $TEMPLATE/{dovecot.conf,dovecot-ldap.conf} /etc/dovecot/
+for conffile in dovecot.conf dovecot-ldap.conf ; do
+ install -o root -g root -m 0644 "$TEMPLATE/$conffile" /etc/dovecot
+done
+
+# Handle IPv4 only systems
 if [ ! -f /proc/net/if_inet6 ];
 then
-  sed -i 's|^listen.*|listen = \*|' /etc/dovecot/dovecot.conf 
+  sed -i 's|^listen.*|listen = \*|' /etc/dovecot/dovecot.conf
 fi
 
 # Setup Sieve
-[ -d /etc/dovecot/global_script ] && rm /etc/dovecot/global_script
-[ ! -d /etc/dovecot/global_script ] && mkdir -m 0770 /etc/dovecot/global_script
+rm -r /etc/dovecot/global_script 2> /dev/null || true
+mkdir -m 0770 /etc/dovecot/global_script || true
 install -o root -g root -m 0755 $TEMPLATE/sa-learn-pipe.sh /usr/bin/sa-learn-pipe.sh
 install -o vmail -g mail -m 0660  $TEMPLATE/global_script/dovecot.sieve /etc/dovecot/global_script
 sievec /etc/dovecot/global_script/dovecot.sieve
 chmod 0660 /etc/dovecot/global_script/dovecot.svbin
 
 # Reload
-service dovecot reload > /dev/null 2>&1
+service dovecot reload
