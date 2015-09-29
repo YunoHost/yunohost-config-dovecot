@@ -2,7 +2,7 @@
 
 set -e
 
-[ -f "/etc/yunohost/yunohost.conf" ] && [ "$(grep dovecot /etc/yunohost/yunohost.conf | cut -d= -f2)" = "no" ] || exit 1
+[ -f "/etc/yunohost/yunohost.conf" ] && [ "$(grep dovecot /etc/yunohost/yunohost.conf | cut -d= -f2)" = "no" ] || exit 0
 
 HOSTNAME=$(hostname -f)
 TEMPLATE="/usr/share/yunohost/yunohost-config/dovecot"
