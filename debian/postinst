@@ -32,6 +32,7 @@ fi
 # Setup Sieve
 rm -r /etc/dovecot/global_script 2> /dev/null || true
 mkdir -m 0770 /etc/dovecot/global_script || true
+chown vmail:mail /etc/dovecot/global_script
 install -o root -g root -m 0755 $TEMPLATE/sa-learn-pipe.sh /usr/bin/sa-learn-pipe.sh
 install -o vmail -g mail -m 0660  $TEMPLATE/global_script/dovecot.sieve /etc/dovecot/global_script
 sievec /etc/dovecot/global_script/dovecot.sieve
